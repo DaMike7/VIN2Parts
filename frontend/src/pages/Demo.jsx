@@ -1,13 +1,15 @@
-import { useState } from 'react';
-import { Search, Home, User, Bell, Clock, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Search, Home, User, Bell, Clock, X, Settings, Disc, Wrench, Zap, Car as CarIcon } from 'lucide-react';
 
 const Demo = () => {
   const [activeView, setActiveView] = useState('home');
   const [vinInput, setVinInput] = useState('');
   const [vehicleConfirmed, setVehicleConfirmed] = useState(false);
   const [showCatalog, setShowCatalog] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('brakes');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPart, setSelectedPart] = useState(null);
+  
+  const categoryRefs = useRef({});
 
   const vehicleData = {
     plate: '12-AB-34',
@@ -22,6 +24,7 @@ const Demo = () => {
 
   const userData = {
     name: 'John Mechanic',
+    userId: 'JM-2024-001',
     email: 'john.mechanic@autoparts.com',
     phone: '+351 912 345 678',
     company: 'AutoParts Portugal',
@@ -29,11 +32,12 @@ const Demo = () => {
   };
 
   const categories = [
-    { id: 'engine', name: 'Engine' },
-    { id: 'brakes', name: 'Brakes' },
-    { id: 'suspension', name: 'Suspension & Steering' },
-    { id: 'body', name: 'Body & Exterior' },
-    { id: 'electrical', name: 'Electrical' }
+    { id: 'all', name: 'All', icon: null },
+    { id: 'engine', name: 'Engine', icon: Settings },
+    { id: 'brakes', name: 'Brakes', icon: Disc },
+    { id: 'suspension', name: 'Suspension & Steering', icon: Wrench },
+    { id: 'body', name: 'Body & Exterior', icon: CarIcon },
+    { id: 'electrical', name: 'Electrical', icon: Zap }
   ];
 
   const partsData = {
@@ -132,10 +136,20 @@ const Demo = () => {
     setSelectedPart({ ...part, diagram: diagramTitle });
   };
 
+  const scrollToCategory = (categoryId) => {
+    setSelectedCategory(categoryId);
+    if (categoryId !== 'all' && categoryRefs.current[categoryId]) {
+      categoryRefs.current[categoryId].scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  };
+
   const renderSidebar = () => (
     <div className="w-64 bg-gray-900 h-screen fixed left-0 top-0 text-white">
       <div className="p-6 border-b border-gray-800">
-        <h2 className="text-2xl font-bold text-yellow-500">AutoParts</h2>
+        <h2 className="text-2xl font-bold text-yellow-500">DemoParts</h2>
         <p className="text-sm text-gray-400 mt-1">Parts Catalog System</p>
       </div>
       
@@ -191,7 +205,7 @@ const Demo = () => {
 
   const renderNavbar = () => (
     <div className="bg-white border-b border-gray-200 px-6 py-4 ml-64 flex items-center justify-between">
-      <h1 className="text-2xl font-bold text-gray-900">Renault Parts Demo</h1>
+      <h1 className="text-2xl font-bold text-gray-900">Parts Catalogue Demo</h1>
       <div className="flex-1 max-w-xl mx-8">
         <div className="relative">
           <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
@@ -202,6 +216,13 @@ const Demo = () => {
           />
         </div>
       </div>
+      <button
+        onClick={() => setActiveView('profile')}
+        className="flex items-center gap-3 px-4 py-2 bg-gray-100 hover:bg-yellow-50 rounded-lg transition-colors border border-gray-200"
+      >
+        <User className="w-5 h-5 text-gray-700" />
+        <span className="font-medium text-gray-900">{userData.userId}</span>
+      </button>
     </div>
   );
 
@@ -292,56 +313,238 @@ const Demo = () => {
       ) : (
         <div>
           {/* Categories Bar */}
-          <div className="bg-white border-b border-gray-200 px-6 py-3 -mx-8 mb-6 flex gap-2 overflow-x-auto">
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
-                  selectedCategory === cat.id
-                    ? 'bg-yellow-500 text-black'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
+          <div className="bg-white border-b border-gray-200 px-6 py-3 -mx-8 mb-6 flex gap-2 overflow-x-auto sticky top-0 z-10">
+            {categories.map(cat => {
+              const Icon = cat.icon;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => scrollToCategory(cat.id)}
+                  className={`px-6 py-2 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2 ${
+                    selectedCategory === cat.id
+                      ? 'bg-yellow-500 text-black'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {Icon && <Icon className="w-5 h-5" />}
+                  {cat.name}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Parts Diagrams - Horizontal Scroll */}
-          <div className="relative">
-            <div className="flex gap-6 overflow-x-auto pb-4">
-              {partsData[selectedCategory]?.map(diagram => (
-                <div key={diagram.id} className="flex-shrink-0 w-96">
-                  <div className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-500">
-                    <div className="bg-gray-900 p-4">
-                      <h3 className="text-xl font-bold text-yellow-500">{diagram.title}</h3>
+          {/* Parts Diagrams - Vertical Layout */}
+          <div className="space-y-8">
+            {/* Engine Section */}
+            <div ref={el => categoryRefs.current['engine'] = el} className="scroll-mt-24">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Settings className="w-6 h-6 text-yellow-500" />
+                Engine
+              </h2>
+              <div className="space-y-6">
+                {partsData.engine?.map(diagram => (
+                  <div key={diagram.id} className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-500">
+                    <div className="bg-gray-900 p-6">
+                      <h3 className="text-2xl font-bold text-yellow-500">{diagram.title}</h3>
                     </div>
                     
-                    {/* Diagram Area */}
-                    <div className="relative bg-gray-100 h-64 flex items-center justify-center">
-                      <div className="text-center text-gray-400">
-                        <p className="text-sm">Exploded Diagram</p>
-                        <p className="text-xs mt-1">Click parts below for details</p>
+                    <div className="grid grid-cols-3 gap-6 p-6">
+                      {/* Diagram Area - Larger */}
+                      <div className="col-span-2">
+                        <div className="relative bg-gray-100 rounded-lg h-96 flex items-center justify-center border-2 border-gray-300">
+                          <div className="text-center text-gray-400">
+                            <p className="text-lg font-semibold">Exploded Diagram</p>
+                            <p className="text-sm mt-2">Diagram placeholder - Add actual part diagram here</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Parts List */}
+                      <div className="space-y-3">
+                        <h4 className="font-bold text-gray-900 text-lg mb-3">Parts List</h4>
+                        {diagram.parts.map((part, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handlePartClick(part, diagram.title)}
+                            className="w-full text-left p-4 bg-gray-50 hover:bg-yellow-50 rounded-lg transition-colors border border-gray-200 hover:border-yellow-500"
+                          >
+                            <p className="font-bold text-gray-900 text-lg">{part.num}</p>
+                            <p className="text-sm text-gray-700 mt-1">{part.desc}</p>
+                          </button>
+                        ))}
                       </div>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Brakes Section */}
+            <div ref={el => categoryRefs.current['brakes'] = el} className="scroll-mt-24">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Disc className="w-6 h-6 text-yellow-500" />
+                Brakes
+              </h2>
+              <div className="space-y-6">
+                {partsData.brakes?.map(diagram => (
+                  <div key={diagram.id} className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-500">
+                    <div className="bg-gray-900 p-6">
+                      <h3 className="text-2xl font-bold text-yellow-500">{diagram.title}</h3>
+                    </div>
                     
-                    {/* Parts List */}
-                    <div className="p-4 space-y-2">
-                      {diagram.parts.map((part, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => handlePartClick(part, diagram.title)}
-                          className="w-full text-left p-3 bg-gray-50 hover:bg-yellow-50 rounded-lg transition-colors border border-gray-200 hover:border-yellow-500"
-                        >
-                          <p className="font-bold text-gray-900">{part.num}</p>
-                          <p className="text-sm text-gray-700">{part.desc}</p>
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-3 gap-6 p-6">
+                      <div className="col-span-2">
+                        <div className="relative bg-gray-100 rounded-lg h-96 flex items-center justify-center border-2 border-gray-300">
+                          <div className="text-center text-gray-400">
+                            <p className="text-lg font-semibold">Exploded Diagram</p>
+                            <p className="text-sm mt-2">Diagram placeholder - Add actual part diagram here</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <h4 className="font-bold text-gray-900 text-lg mb-3">Parts List</h4>
+                        {diagram.parts.map((part, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handlePartClick(part, diagram.title)}
+                            className="w-full text-left p-4 bg-gray-50 hover:bg-yellow-50 rounded-lg transition-colors border border-gray-200 hover:border-yellow-500"
+                          >
+                            <p className="font-bold text-gray-900 text-lg">{part.num}</p>
+                            <p className="text-sm text-gray-700 mt-1">{part.desc}</p>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            {/* Suspension Section */}
+            <div ref={el => categoryRefs.current['suspension'] = el} className="scroll-mt-24">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Wrench className="w-6 h-6 text-yellow-500" />
+                Suspension & Steering
+              </h2>
+              <div className="space-y-6">
+                {partsData.suspension?.map(diagram => (
+                  <div key={diagram.id} className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-500">
+                    <div className="bg-gray-900 p-6">
+                      <h3 className="text-2xl font-bold text-yellow-500">{diagram.title}</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-6 p-6">
+                      <div className="col-span-2">
+                        <div className="relative bg-gray-100 rounded-lg h-96 flex items-center justify-center border-2 border-gray-300">
+                          <div className="text-center text-gray-400">
+                            <p className="text-lg font-semibold">Exploded Diagram</p>
+                            <p className="text-sm mt-2">Diagram placeholder - Add actual part diagram here</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <h4 className="font-bold text-gray-900 text-lg mb-3">Parts List</h4>
+                        {diagram.parts.map((part, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handlePartClick(part, diagram.title)}
+                            className="w-full text-left p-4 bg-gray-50 hover:bg-yellow-50 rounded-lg transition-colors border border-gray-200 hover:border-yellow-500"
+                          >
+                            <p className="font-bold text-gray-900 text-lg">{part.num}</p>
+                            <p className="text-sm text-gray-700 mt-1">{part.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Body Section */}
+            <div ref={el => categoryRefs.current['body'] = el} className="scroll-mt-24">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <CarIcon className="w-6 h-6 text-yellow-500" />
+                Body & Exterior
+              </h2>
+              <div className="space-y-6">
+                {partsData.body?.map(diagram => (
+                  <div key={diagram.id} className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-500">
+                    <div className="bg-gray-900 p-6">
+                      <h3 className="text-2xl font-bold text-yellow-500">{diagram.title}</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-6 p-6">
+                      <div className="col-span-2">
+                        <div className="relative bg-gray-100 rounded-lg h-96 flex items-center justify-center border-2 border-gray-300">
+                          <div className="text-center text-gray-400">
+                            <p className="text-lg font-semibold">Exploded Diagram</p>
+                            <p className="text-sm mt-2">Diagram placeholder - Add actual part diagram here</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <h4 className="font-bold text-gray-900 text-lg mb-3">Parts List</h4>
+                        {diagram.parts.map((part, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handlePartClick(part, diagram.title)}
+                            className="w-full text-left p-4 bg-gray-50 hover:bg-yellow-50 rounded-lg transition-colors border border-gray-200 hover:border-yellow-500"
+                          >
+                            <p className="font-bold text-gray-900 text-lg">{part.num}</p>
+                            <p className="text-sm text-gray-700 mt-1">{part.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Electrical Section */}
+            <div ref={el => categoryRefs.current['electrical'] = el} className="scroll-mt-24">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Zap className="w-6 h-6 text-yellow-500" />
+                Electrical
+              </h2>
+              <div className="space-y-6">
+                {partsData.electrical?.map(diagram => (
+                  <div key={diagram.id} className="bg-white rounded-xl shadow-lg overflow-hidden border-2 border-yellow-500">
+                    <div className="bg-gray-900 p-6">
+                      <h3 className="text-2xl font-bold text-yellow-500">{diagram.title}</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-6 p-6">
+                      <div className="col-span-2">
+                        <div className="relative bg-gray-100 rounded-lg h-96 flex items-center justify-center border-2 border-gray-300">
+                          <div className="text-center text-gray-400">
+                            <p className="text-lg font-semibold">Exploded Diagram</p>
+                            <p className="text-sm mt-2">Diagram placeholder - Add actual part diagram here</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <h4 className="font-bold text-gray-900 text-lg mb-3">Parts List</h4>
+                        {diagram.parts.map((part, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handlePartClick(part, diagram.title)}
+                            className="w-full text-left p-4 bg-gray-50 hover:bg-yellow-50 rounded-lg transition-colors border border-gray-200 hover:border-yellow-500"
+                          >
+                            <p className="font-bold text-gray-900 text-lg">{part.num}</p>
+                            <p className="text-sm text-gray-700 mt-1">{part.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -356,6 +559,10 @@ const Demo = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-6">User Profile</h2>
           
           <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-yellow-500">
+              <p className="text-sm text-gray-600 mb-1">User ID</p>
+              <p className="text-lg font-semibold text-gray-900">{userData.userId}</p>
+            </div>
             <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-yellow-500">
               <p className="text-sm text-gray-600 mb-1">Full Name</p>
               <p className="text-lg font-semibold text-gray-900">{userData.name}</p>
@@ -482,7 +689,7 @@ const Demo = () => {
             </div>
             
             <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-lg transition-colors">
-              Add to Quote
+              Source This Part
             </button>
           </div>
         </div>
