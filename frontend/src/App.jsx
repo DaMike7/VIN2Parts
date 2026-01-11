@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Demo from './pages/Demo'; 
-import InteractiveCarMap from './pages/LandingPage';
 import './App.css';
 
 function App() {
@@ -8,7 +7,6 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Demo />} />
-        <Route path="/r" element={<InteractiveCarMap />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
